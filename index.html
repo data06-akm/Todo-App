@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>To-Do App</title>
+  <style>
+    :root {
+      --bg-light: #f4f7fa;
+      --bg-dark: #1e1e2f;
+      --card-light: #ffffff;
+      --card-dark: #2a2a3c;
+      --text-light: #333;
+      --text-dark: #f1f1f1;
+      --primary: #667eea;
+      --primary-dark: #5645d8;
+      --danger: #ff4d6d;
+    }
+
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: var(--bg-light);
+      color: var(--text-light);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      transition: 0.3s;
+    }
+
+    body.dark {
+      background: var(--bg-dark);
+      color: var(--text-dark);
+    }
+
+    .app-container {
+      background: var(--card-light);
+      width: 100%;
+      max-width: 480px;
+      padding: 25px 20px;
+      border-radius: 20px;
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+      transition: 0.3s;
+    }
+
+    body.dark .app-container {
+      background: var(--card-dark);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 15px;
+      font-size: 26px;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 15px;
+    }
+
+    .mode-toggle {
+      cursor: pointer;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 10px;
+      background: var(--primary);
+      color: white;
+      transition: 0.3s;
+    }
+
+    .mode-toggle:hover {
+      background: var(--primary-dark);
+    }
+
+    .task-input {
+      display: flex;
+      margin-bottom: 15px;
+    }
+
+    .task-input input {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      outline: none;
+      font-size: 14px;
+    }
+
+    .task-input button {
+      margin-left: 10px;
+      padding: 12px 18px;
+      border: none;
+      background: var(--primary);
+      color: white;
+      border-radius: 10px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .task-input button:hover {
+      background: var(--primary-dark);
+    }
+
+    .filters {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 15px;
+    }
+
+    .filters button {
+      background: transparent;
+      border: none;
+      font-size: 14px;
+      cursor: pointer;
+      padding: 6px 12px;
+      border-radius: 8px;
+      transition: 0.3s;
+    }
+
+    .filters button.active {
+      background: var(--primary);
+      color: white;
+    }
+
+    ul {
+      list-style: none;
+      max-height: 300px;
+      overflow-y: auto;
+      padding-right: 5px;
+    }
+
+    li {
+      background: var(--bg-light);
+      padding: 12px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: 0.2s;
+    }
+
+    body.dark li {
+      background: #3a3a4f;
+    }
+
+    li.completed {
+      text-decoration: line-through;
+      color: gray;
+      opacity: 0.8;
+    }
+
+    .task-text {
+      flex: 1;
+      cursor: pointer;
+    }
+
+    .delete-btn {
+      background: var(--danger);
+      border: none;
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: 0.3s;
+    }
+
+    .delete-btn:hover {
+      background: darkred;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <div class="top-bar">
+      <h1>📝 To-Do</h1>
+      <button class="mode-toggle" onclick="toggleMode()">🌙</button>
+    </div>
+    <div class="task-input">
+      <input type="text" id="taskInput" placeholder="Add a new task..." />
+      <button onclick="addTask()">Add</button>
+    </div>
+    <div class="filters">
+      <button class="active" onclick="setFilter('all')">All</button>
+      <button onclick="setFilter('pending')">Pending</button>
+      <button onclick="setFilter('completed')">Completed</button>
+    </div>
+    <ul id="taskList"></ul>
+  </div>
+
+  <script>
+    const taskInput = document.getElementById("taskInput");
+    const taskList = document.getElementById("taskList");
+    let filter = "all";
+
+    // Load tasks from localStorage
+    window.onload = () => {
+      let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+      tasks.forEach(task => renderTask(task.text, task.completed));
+    };
+
+    function addTask() {
+      const taskText = taskInput.value.trim();
+      if (!taskText) return;
+
+      renderTask(taskText, false);
+      saveTasks();
+
+      taskInput.value = "";
+    }
+
+    function renderTask(text, completed) {
+      const li = document.createElement("li");
+      if (completed) li.classList.add("completed");
+
+      const span = document.createElement("span");
+      span.textContent = text;
+      span.classList.add("task-text");
+
+      span.onclick = () => {
+        li.classList.toggle("completed");
+        saveTasks();
+        applyFilter();
+      };
+
+      const delBtn = document.createElement("button");
+      delBtn.textContent = "Delete";
+      delBtn.classList.add("delete-btn");
+
+      delBtn.onclick = () => {
+        li.remove();
+        saveTasks();
+      };
+
+      li.appendChild(span);
+      li.appendChild(delBtn);
+      taskList.appendChild(li);
+
+      applyFilter();
+    }
+
+    function saveTasks() {
+      const tasks = [];
+      document.querySelectorAll("#taskList li").forEach(li => {
+        tasks.push({
+          text: li.querySelector(".task-text").textContent,
+          completed: li.classList.contains("completed"),
+        });
+      });
+      localStorage.setItem("tasks", JSON.stringify(tasks));
+    }
+
+    function setFilter(type) {
+      filter = type;
+      document.querySelectorAll(".filters button").forEach(btn =>
+        btn.classList.remove("active")
+      );
+      event.target.classList.add("active");
+      applyFilter();
+    }
+
+    function applyFilter() {
+      document.querySelectorAll("#taskList li").forEach(li => {
+        li.style.display = "flex";
+        if (filter === "pending" && li.classList.contains("completed")) {
+          li.style.display = "none";
+        } else if (filter === "completed" && !li.classList.contains("completed")) {
+          li.style.display = "none";
+        }
+      });
+    }
+
+    function toggleMode() {
+      document.body.classList.toggle("dark");
+    }
+  </script>
+</body>
+</html>
